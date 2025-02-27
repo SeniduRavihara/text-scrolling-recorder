@@ -1,25 +1,31 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { longText } from "./constants";
 
 const App2 = () => {
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const requestRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
+    null
+  );
+  const [isRecording, setIsRecording] = useState(false);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
+  const chunksRef = useRef<Blob[]>([]); // To store video chunks
 
-  const requestRef = useRef(null);
-  const frameCount = useRef(0);
+  console.log(isRecording);
 
   const animate = (story) => {
-    // Clear the canvas at the start of each frame
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
+    const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-    frameCount.current += 1;
-
+    // Clear the canvas at the start of each frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     story.update(); // Update the story position
 
-    requestRef.current = requestAnimationFrame(() => animate(story)); // Recursive call to animate
+    // Request the next animation frame
+    requestRef.current = requestAnimationFrame(() => animate(story));
   };
 
   useEffect(() => {
@@ -41,21 +47,18 @@ const App2 = () => {
       }
 
       draw() {
-        // Set font properties
         const ctx = canvas.getContext("2d");
         ctx.fillStyle = "white";
         ctx.font = "20px UN-Baron";
-        ctx.textAlign = "center"; // Align text to the center
-        ctx.textBaseline = "top"; // Text aligns from top
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
 
-        // Word wrapping logic
         const lineHeight = 30;
-        const maxWidth = canvas.width - 20; // Maximum width of text (leave some margin)
+        const maxWidth = canvas.width - 20;
 
-        // Function to wrap text and add new line when exceeding canvas width
         const wrapText = (text, ctx, maxWidth) => {
           const lines = [];
-          const paragraphs = text.split("\n"); // Split by newlines first
+          const paragraphs = text.split("\n");
 
           paragraphs.forEach((paragraph) => {
             const words = paragraph.split(" ");
@@ -65,7 +68,6 @@ const App2 = () => {
               const testLine = currentLine + word + " ";
               const testWidth = ctx.measureText(testLine).width;
 
-              // If the testLine exceeds maxWidth, push the current line and start a new one
               if (testWidth > maxWidth && currentLine.length > 0) {
                 lines.push(currentLine);
                 currentLine = word + " ";
@@ -74,51 +76,107 @@ const App2 = () => {
               }
             });
 
-            // Add the last line if any
             if (currentLine.length > 0) {
               lines.push(currentLine);
             }
 
-            // Add a blank line after each paragraph
-            lines.push("");
+            lines.push(""); // Add an empty line after each paragraph
           });
 
           return lines;
         };
 
-        // Split the text into lines considering wrapping
         const wrappedText = wrapText(this.story, ctx, maxWidth);
-
-        // Render the wrapped text on the canvas
-        let yPosition = this.y; // Starting Y position on the canvas
+        let yPosition = this.y;
 
         wrappedText.forEach((line) => {
-          // Render each line centered
-          ctx.fillText(line, canvas.width / 2, yPosition); // Render each line at the center horizontally
-          yPosition += lineHeight; // Move to the next line
+          ctx.fillText(line, canvas.width / 2, yPosition);
+          yPosition += 30;
         });
       }
 
       update() {
         this.draw();
-        this.y -= this.speed; // Move the text upwards
-        // if (this.y < -canvas.height) {
-        //   // If text moves off-screen, reset its position
-        //   this.y = canvas.height;
+        this.y -= this.speed;
+
+        // if (this.y < -960) {
+        //   this.y = 960; // Reset text position
         // }
       }
     }
 
-    const story = new Story({ story: longText, speed: 1, y: 50 }); // Initialize story with starting y-position and speed
-    animate(story); // Start the animation
+    const story = new Story({ story: longText, speed: 1, y: 960 });
 
-    return () => cancelAnimationFrame(requestRef.current); // Cleanup on unmount
+    // Start the animation
+    animate(story);
+
+    // Setup video recording when the component mounts
+    const stream = canvas.captureStream(30); // Capture stream at 30 FPS
+    const mediaRecorderInstance = new MediaRecorder(stream, {
+      mimeType: "video/webm",
+    });
+
+    // Handle the data available event to collect the video chunks
+    mediaRecorderInstance.ondataavailable = (event) => {
+      chunksRef.current.push(event.data); // Collect video chunks
+    };
+
+    // Set the media recorder state
+    setMediaRecorder(mediaRecorderInstance);
+
+    mediaRecorderInstance.onstop = () => {
+      // When recording stops, combine all chunks into a Blob
+      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      setVideoBlob(blob); // Set the video blob to state
+      chunksRef.current = []; // Clear the chunks array for the next recording
+    };
+
+    // Cleanup on unmount
+    return () => cancelAnimationFrame(requestRef.current!);
   }, []);
+
+  const handleStartRecording = () => {
+    if (mediaRecorder) {
+      setIsRecording(true);
+      chunksRef.current = []; // Clear any previous chunks
+      mediaRecorder.start(); // Start recording
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorder) {
+      setIsRecording(false);
+      mediaRecorder.stop(); // Stop recording
+    }
+  };
+
+  const handleDownload = () => {
+    if (!videoBlob) return;
+
+    const url = URL.createObjectURL(videoBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "animated_text.webm"; // Download video as .webm
+    link.click();
+    URL.revokeObjectURL(url); // Clean up the object URL
+  };
 
   return (
     <div className="w-screen flex items-center justify-center p-10">
       {/* Canvas for rendering the text */}
       <canvas ref={canvasRef} style={{ background: "black" }} />
+
+      <div className="controls">
+        <button onClick={handleStartRecording} disabled={isRecording}>
+          Start Recording
+        </button>
+        <button onClick={handleStopRecording} disabled={!isRecording}>
+          Stop Recording
+        </button>
+        <button onClick={handleDownload} disabled={!videoBlob}>
+          Download Video
+        </button>
+      </div>
     </div>
   );
 };
