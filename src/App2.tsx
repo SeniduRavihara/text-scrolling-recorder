@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { longText } from "./constants";
+import { Story } from "./classes/Story";
+
+
 
 const App2 = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -13,9 +16,7 @@ const App2 = () => {
   );
   const chunksRef = useRef<Blob[]>([]); // To store video chunks
 
-  console.log(isRecording);
-
-  const animate = (story) => {
+  const animate = (story: Story) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
@@ -39,97 +40,41 @@ const App2 = () => {
     canvas.width = 540;
     canvas.height = 960;
 
-    class Story {
-      constructor({ story, speed, y }) {
-        this.story = story;
-        this.speed = speed;
-        this.y = y;
-      }
+    // Log mediaRecorder and captureStream for debugging
+    console.log("Initializing recording stream...");
 
-      draw() {
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "white";
-        ctx.font = "20px UN-Baron";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-
-        const lineHeight = 30;
-        const maxWidth = canvas.width - 20;
-
-        const wrapText = (text, ctx, maxWidth) => {
-          const lines = [];
-          const paragraphs = text.split("\n");
-
-          paragraphs.forEach((paragraph) => {
-            const words = paragraph.split(" ");
-            let currentLine = "";
-
-            words.forEach((word) => {
-              const testLine = currentLine + word + " ";
-              const testWidth = ctx.measureText(testLine).width;
-
-              if (testWidth > maxWidth && currentLine.length > 0) {
-                lines.push(currentLine);
-                currentLine = word + " ";
-              } else {
-                currentLine = testLine;
-              }
-            });
-
-            if (currentLine.length > 0) {
-              lines.push(currentLine);
-            }
-
-            lines.push(""); // Add an empty line after each paragraph
-          });
-
-          return lines;
-        };
-
-        const wrappedText = wrapText(this.story, ctx, maxWidth);
-        let yPosition = this.y;
-
-        wrappedText.forEach((line) => {
-          ctx.fillText(line, canvas.width / 2, yPosition);
-          yPosition += 30;
-        });
-      }
-
-      update() {
-        this.draw();
-        this.y -= this.speed;
-
-        // if (this.y < -960) {
-        //   this.y = 960; // Reset text position
-        // }
-      }
-    }
-
-    const story = new Story({ story: longText, speed: 1, y: 960 });
-
-    // Start the animation
-    animate(story);
-
-    // Setup video recording when the component mounts
     const stream = canvas.captureStream(30); // Capture stream at 30 FPS
     const mediaRecorderInstance = new MediaRecorder(stream, {
       mimeType: "video/webm",
     });
 
-    // Handle the data available event to collect the video chunks
+    // Log mediaRecorder to verify if it's correctly initialized
+    console.log("MediaRecorder initialized:", mediaRecorderInstance);
+
     mediaRecorderInstance.ondataavailable = (event) => {
+      console.log("Data available for video recording:", event.data);
       chunksRef.current.push(event.data); // Collect video chunks
     };
 
-    // Set the media recorder state
-    setMediaRecorder(mediaRecorderInstance);
-
     mediaRecorderInstance.onstop = () => {
-      // When recording stops, combine all chunks into a Blob
+      console.log("Recording stopped. Combining chunks...");
       const blob = new Blob(chunksRef.current, { type: "video/webm" });
       setVideoBlob(blob); // Set the video blob to state
       chunksRef.current = []; // Clear the chunks array for the next recording
     };
+
+    setMediaRecorder(mediaRecorderInstance); // Set mediaRecorder state
+    const story = new Story({
+      story: longText,
+      speed: 1,
+      y: 960,
+      ctx: ctx,
+      canvas: canvas,
+      title: "Hello",
+    });
+
+    // Start the animation
+    animate(story);
 
     // Cleanup on unmount
     return () => cancelAnimationFrame(requestRef.current!);
@@ -139,6 +84,7 @@ const App2 = () => {
     if (mediaRecorder) {
       setIsRecording(true);
       chunksRef.current = []; // Clear any previous chunks
+      console.log("Starting recording...");
       mediaRecorder.start(); // Start recording
     }
   };
@@ -146,6 +92,7 @@ const App2 = () => {
   const handleStopRecording = () => {
     if (mediaRecorder) {
       setIsRecording(false);
+      console.log("Stopping recording...");
       mediaRecorder.stop(); // Stop recording
     }
   };
@@ -156,7 +103,7 @@ const App2 = () => {
     const url = URL.createObjectURL(videoBlob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "animated_text.webm"; // Download video as .webm
+    link.download = "animated_text.mp4"; // Download video as .webm
     link.click();
     URL.revokeObjectURL(url); // Clean up the object URL
   };
