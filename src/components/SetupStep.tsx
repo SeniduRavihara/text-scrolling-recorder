@@ -147,6 +147,8 @@ const SetupStep: React.FC<SetupStepProps> = ({
               <option value="'Arial', sans-serif">Arial</option>
               <option value="'Courier New', monospace">Courier New</option>
               <option value="'Times New Roman', serif">Times New Roman</option>
+              <option value="'CustomFont1', sans-serif">Custom Font 1</option>
+              <option value="'CustomFont2', sans-serif">Custom Font 2</option>
             </select>
           </div>
 

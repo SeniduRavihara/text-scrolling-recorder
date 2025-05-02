@@ -1,7 +1,27 @@
 @import "tailwindcss";
 
+/* Add at top of CSS file */
+@font-face {
+  font-family: 'StarJedi';
+  src: url('/fonts/un-arjuna.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Add other TTF fonts similarly */
+@font-face {
+  font-family: 'CustomFont1';
+  src: url('/fonts/un-basuru.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'CustomFont2';
+  src: url('/fonts/un-derana.ttf') format('truetype');
+}
+
 body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+
