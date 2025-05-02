@@ -1,4 +1,4 @@
-export class Story {
+export class ImprovedStory {
   private ctx: CanvasRenderingContext2D;
   private story: string;
   private speed: number;
@@ -280,9 +280,9 @@ export class Story {
       // Update target position
       this.targetPosition -= pixelsToMove;
 
-      // Update position with smooth interpolation
+      // Update position with smooth interpolation - increased interpolation factor for more responsive scrolling
       this.position =
-        this.position + (this.targetPosition - this.position) * 0.1;
+        this.position + (this.targetPosition - this.position) * 0.3;
 
       // Reduce accumulated time
       this.accumulatedTime -= this.animationStep;
