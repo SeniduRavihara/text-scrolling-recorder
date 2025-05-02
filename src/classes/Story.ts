@@ -1,3 +1,4 @@
+// classes/Story.ts
 export class ImprovedStory {
   private ctx: CanvasRenderingContext2D;
   private story: string;
@@ -14,8 +15,13 @@ export class ImprovedStory {
   private targetPosition: number;
   private lastFrameTime: number = 0;
   private accumulatedTime: number = 0;
-  private animationStep: number = 1 / 120; // Higher precision step for smoother animation
-  private textOffscreenImage: OffscreenCanvas | null = null; // For text caching
+  private animationStep: number = 1 / 120;
+  private textOffscreenImage: OffscreenCanvas | null = null;
+
+  // Customization properties
+  private font: string;
+  private titleColor: string;
+  private textColor: string;
 
   constructor({
     ctx,
@@ -24,6 +30,9 @@ export class ImprovedStory {
     startPosition,
     title,
     canvas,
+    font = "'Arial', sans-serif",
+    titleColor = "#FFDD00",
+    textColor = "white",
   }: {
     ctx: CanvasRenderingContext2D;
     story: string;
@@ -31,16 +40,21 @@ export class ImprovedStory {
     startPosition: number;
     title: string;
     canvas: HTMLCanvasElement;
+    font?: string;
+    titleColor?: string;
+    textColor?: string;
   }) {
     this.story = story;
     this.speed = speed;
     this.position = startPosition;
-    this.targetPosition = startPosition; // Initialize target position
+    this.targetPosition = startPosition;
     this.title = title;
     this.ctx = ctx;
     this.canvas = canvas;
+    this.font = font;
+    this.titleColor = titleColor;
+    this.textColor = textColor;
 
-    // Try to create offscreen canvas for better performance
     try {
       this.textOffscreenImage = new OffscreenCanvas(
         canvas.width,
@@ -53,27 +67,23 @@ export class ImprovedStory {
       this.textOffscreenImage = null;
     }
 
-    // Pre-process text immediately for better performance
     this.preprocessText();
   }
 
-  // Pre-process text into lines to avoid recalculating on every frame
   private preprocessText() {
-    const maxWidth = this.canvas.width - 80; // Wider margin for better appearance
+    const maxWidth = this.canvas.width - 80;
 
     // Process title
-    this.ctx.font = "bold 40px 'Arial', sans-serif"; // Slightly larger font
+    this.ctx.font = `bold 40px ${this.font}`;
     this.cachedTitleLines = this.wrapText(this.title.toUpperCase(), maxWidth);
 
     // Process main text
-    this.ctx.font = "22px 'Arial', sans-serif"; // Slightly larger font
+    this.ctx.font = `22px ${this.font}`;
     this.cachedLines = this.wrapText(this.story, maxWidth);
 
     // Calculate total height
     this.totalHeight =
-      this.cachedTitleLines.length * 60 + // Title lines height (increased)
-      this.cachedLines.length * 36 + // Story lines height (increased)
-      100; // Additional spacing between title and text
+      this.cachedTitleLines.length * 60 + this.cachedLines.length * 36 + 100;
 
     // Pre-render text to offscreen canvas if supported
     if (this.textOffscreenImage) {
@@ -81,7 +91,6 @@ export class ImprovedStory {
     }
   }
 
-  // Pre-render all text to an offscreen canvas for better performance
   private preRenderText() {
     if (!this.textOffscreenImage) return;
 
@@ -90,7 +99,6 @@ export class ImprovedStory {
     });
     if (!offscreenCtx) return;
 
-    // Clear the canvas
     offscreenCtx.clearRect(
       0,
       0,
@@ -105,8 +113,8 @@ export class ImprovedStory {
     let yPos = 0;
 
     // Draw title
-    offscreenCtx.fillStyle = "#FFDD00"; // Star Wars yellow
-    offscreenCtx.font = "bold 40px 'Arial', sans-serif";
+    offscreenCtx.fillStyle = this.titleColor;
+    offscreenCtx.font = `bold 40px ${this.font}`;
 
     this.cachedTitleLines.forEach((line) => {
       offscreenCtx.fillText(
@@ -114,15 +122,15 @@ export class ImprovedStory {
         Math.round(this.textOffscreenImage!.width / 2),
         yPos
       );
-      yPos += 60; // Fixed spacing for title lines
+      yPos += 60;
     });
 
     // Add space between title and main text
     yPos += 40;
 
     // Draw main text
-    offscreenCtx.fillStyle = "white";
-    offscreenCtx.font = "22px 'Arial', sans-serif";
+    offscreenCtx.fillStyle = this.textColor;
+    offscreenCtx.font = `22px ${this.font}`;
 
     this.cachedLines.forEach((line) => {
       offscreenCtx.fillText(
@@ -130,7 +138,7 @@ export class ImprovedStory {
         Math.round(this.textOffscreenImage!.width / 2),
         yPos
       );
-      yPos += 36; // Fixed spacing for text lines
+      yPos += 36;
     });
   }
 
@@ -163,14 +171,12 @@ export class ImprovedStory {
         lines.push(currentLine.trim());
       }
 
-      // Add an empty line after each paragraph
       lines.push("");
     });
 
     return lines;
   }
 
-  // Draw current frame using the more efficient method
   public drawOnly() {
     if (this.textOffscreenImage) {
       this.drawFromOffscreen();
@@ -179,16 +185,13 @@ export class ImprovedStory {
     }
   }
 
-  // Draw text from pre-rendered offscreen canvas (faster)
   private drawFromOffscreen() {
     if (!this.textOffscreenImage) return;
 
-    // Calculate source and destination rectangles for drawing
     const canvas = this.canvas;
     const sourceY = 0;
     const sourceHeight = this.totalHeight + canvas.height;
 
-    // Draw the pre-rendered text at the current position
     this.ctx.drawImage(
       this.textOffscreenImage,
       0,
@@ -202,93 +205,76 @@ export class ImprovedStory {
     );
   }
 
-  // Draw text directly to canvas (fallback method)
   private drawDirect(interpolatedPosition: number) {
     const ctx = this.ctx;
     const canvas = this.canvas;
 
-    // Use Math.round to ensure pixel-perfect positioning (prevents text shimmering)
     const roundedPosition = Math.round(interpolatedPosition);
 
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     // Draw title lines
-    ctx.fillStyle = "#FFDD00"; // Star Wars yellow
-    ctx.font = "bold 40px 'Arial', sans-serif"; // Slightly larger, clearer font
+    ctx.fillStyle = this.titleColor;
+    ctx.font = `bold 40px ${this.font}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 
+    // Apply text shadow for better visibility
+    ctx.shadowColor =
+      this.titleColor === "#FFDD00" ? "rgba(255, 221, 0, 0.4)" : "transparent";
+    ctx.shadowBlur = 3;
+
     let yPos = roundedPosition;
 
-    // Apply text shadow for better visibility and Star Wars feeling
-    ctx.shadowColor = "rgba(255, 221, 0, 0.4)";
-    ctx.shadowBlur = 3;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-
-    // Draw title lines with anti-aliasing consideration
     this.cachedTitleLines.forEach((line) => {
-      // Only draw lines that are visible on screen (performance optimization)
       if (yPos >= -60 && yPos <= canvas.height) {
         ctx.fillText(line, Math.round(canvas.width / 2), yPos);
       }
-      yPos += 60; // Fixed spacing for title lines (increased)
+      yPos += 60;
     });
 
     // Add space between title and main text
     yPos += 40;
 
     // Draw main text
-    ctx.fillStyle = "white";
-    ctx.font = "22px 'Arial', sans-serif"; // Slightly larger font
+    ctx.fillStyle = this.textColor;
+    ctx.font = `22px ${this.font}`;
 
-    // Change shadow for main text
-    ctx.shadowColor = "rgba(255, 255, 255, 0.3)";
+    ctx.shadowColor =
+      this.textColor === "white" ? "rgba(255, 255, 255, 0.3)" : "transparent";
     ctx.shadowBlur = 2;
 
-    // Draw text lines with anti-aliasing consideration
     this.cachedLines.forEach((line) => {
-      // Only draw lines that are visible on screen
       if (yPos >= -36 && yPos <= canvas.height) {
         ctx.fillText(line, Math.round(canvas.width / 2), yPos);
       }
-      yPos += 36; // Fixed spacing for text lines (increased)
+      yPos += 36;
     });
 
-    // Reset shadow
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
   }
 
   update(timestamp: number) {
-    // Initialize timestamp on first call
     if (!this.lastTimestamp) {
       this.lastTimestamp = timestamp;
       return;
     }
 
-    // Calculate frame time delta
-    const frameTime = Math.min(0.03, (timestamp - this.lastTimestamp) / 1000); // Cap at 30ms to avoid large jumps
+    const frameTime = Math.min(0.03, (timestamp - this.lastTimestamp) / 1000);
     this.lastTimestamp = timestamp;
 
-    // Add the frame time to our accumulated time
     this.accumulatedTime += frameTime;
 
-    // While we have enough accumulated time for a physics update:
     while (this.accumulatedTime >= this.animationStep) {
-      // Calculate precise movement amount (pixels per second * time)
       const pixelsToMove = this.speed * 60 * this.animationStep;
-
-      // Update target position
       this.targetPosition -= pixelsToMove;
-
-      // Update position with smooth interpolation - increased interpolation factor for more responsive scrolling
       this.position =
         this.position + (this.targetPosition - this.position) * 0.3;
-
-      // Reduce accumulated time
       this.accumulatedTime -= this.animationStep;
     }
 
-    // Reset position when text is fully scrolled
     if (this.position < -this.totalHeight) {
       this.position = this.canvas.height;
       this.targetPosition = this.canvas.height;
@@ -296,10 +282,7 @@ export class ImprovedStory {
   }
 
   render(timestamp: number) {
-    // Update position based on time
     this.update(timestamp);
-
-    // Draw with the updated position
     if (this.textOffscreenImage) {
       this.drawFromOffscreen();
     } else {
@@ -307,7 +290,6 @@ export class ImprovedStory {
     }
   }
 
-  // Utility methods
   setSpeed(speed: number) {
     this.speed = speed;
   }
@@ -315,13 +297,11 @@ export class ImprovedStory {
   reset() {
     this.position = this.canvas.height;
     this.targetPosition = this.canvas.height;
-    this.lastTimestamp = 0; // Reset timer to prevent jumps
+    this.lastTimestamp = 0;
     this.accumulatedTime = 0;
   }
 
   getEstimatedDuration(): number {
-    // Calculate approximate duration in seconds
-    // (total distance to scroll / pixels per second)
     return (this.totalHeight + this.canvas.height) / (this.speed * 60);
   }
 }

@@ -1,3 +1,4 @@
+// components/SetupStep.tsx
 import React from "react";
 
 interface SetupStepProps {
@@ -9,13 +10,15 @@ interface SetupStepProps {
   setResolution: (resolution: "720p" | "1080p") => void;
   speed: number;
   setSpeed: (speed: number) => void;
+  font: string;
+  setFont: (font: string) => void;
+  titleColor: string;
+  setTitleColor: (color: string) => void;
+  textColor: string;
+  setTextColor: (color: string) => void;
   onContinue: () => void;
 }
 
-/**
- * First step of the Star Wars scroll creator
- * Handles configuration of text content and video settings
- */
 const SetupStep: React.FC<SetupStepProps> = ({
   title,
   setTitle,
@@ -25,6 +28,12 @@ const SetupStep: React.FC<SetupStepProps> = ({
   setResolution,
   speed,
   setSpeed,
+  font,
+  setFont,
+  titleColor,
+  setTitleColor,
+  textColor,
+  setTextColor,
   onContinue,
 }) => {
   return (
@@ -57,9 +66,6 @@ const SetupStep: React.FC<SetupStepProps> = ({
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your main text content here..."
             />
-            <p className="text-xs text-gray-400 mt-1">
-              This is the main scrolling text that appears in white
-            </p>
           </div>
         </div>
 
@@ -79,7 +85,6 @@ const SetupStep: React.FC<SetupStepProps> = ({
                 <span className="font-bold">720p</span>
                 <span className="text-xs mt-1">Standard Quality</span>
               </button>
-
               <button
                 onClick={() => setResolution("1080p")}
                 className={`py-3 px-4 rounded-lg flex flex-col items-center justify-center transition ${
@@ -92,9 +97,6 @@ const SetupStep: React.FC<SetupStepProps> = ({
                 <span className="text-xs mt-1">High Quality</span>
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
-              Higher resolution = better quality but uses more resources
-            </p>
           </div>
 
           <div className="mb-6">
@@ -117,14 +119,38 @@ const SetupStep: React.FC<SetupStepProps> = ({
             </div>
           </div>
 
-          <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-            <h3 className="font-medium mb-2">Tips for Best Results:</h3>
-            <ul className="list-disc pl-4 space-y-1 text-gray-300 text-sm">
-              <li>Keep title text short and impactful</li>
-              <li>Use paragraph breaks in your main content</li>
-              <li>Slower speeds create more dramatic effect</li>
-              <li>Use 720p if you experience performance issues</li>
-            </ul>
+          <div className="mb-6">
+            <label className="block mb-2 font-medium">Custom Font</label>
+            <select
+              value={font}
+              onChange={(e) => setFont(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+            >
+              <option value="'StarJedi', sans-serif">Star Wars</option>
+              <option value="'Arial', sans-serif">Arial</option>
+              <option value="'Courier New', monospace">Courier New</option>
+              <option value="'Times New Roman', serif">Times New Roman</option>
+            </select>
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-2 font-medium">Title Color</label>
+            <input
+              type="color"
+              value={titleColor}
+              onChange={(e) => setTitleColor(e.target.value)}
+              className="w-full h-10 rounded cursor-pointer"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-2 font-medium">Text Color</label>
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+              className="w-full h-10 rounded cursor-pointer"
+            />
           </div>
         </div>
       </div>
@@ -134,7 +160,7 @@ const SetupStep: React.FC<SetupStepProps> = ({
           onClick={onContinue}
           className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium text-lg"
         >
-          Continue to Preview
+          Continue to Audio Setup
         </button>
       </div>
     </div>
