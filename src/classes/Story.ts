@@ -1,4 +1,3 @@
-// classes/Story.ts
 export class ImprovedStory {
   private ctx: CanvasRenderingContext2D;
   private story: string;
@@ -13,7 +12,6 @@ export class ImprovedStory {
 
   // Smooth scrolling variables
   private targetPosition: number;
-  private lastFrameTime: number = 0;
   private accumulatedTime: number = 0;
   private animationStep: number = 1 / 120;
   private textOffscreenImage: OffscreenCanvas | null = null;
@@ -22,6 +20,9 @@ export class ImprovedStory {
   private font: string;
   private titleColor: string;
   private textColor: string;
+  private titleFontSize: number;
+  private contentFontSize: number;
+  private backgroundColor: string;
 
   constructor({
     ctx,
@@ -33,6 +34,9 @@ export class ImprovedStory {
     font = "'Arial', sans-serif",
     titleColor = "#FFDD00",
     textColor = "white",
+    titleFontSize = 40,
+    contentFontSize = 22,
+    backgroundColor = "#000000",
   }: {
     ctx: CanvasRenderingContext2D;
     story: string;
@@ -43,6 +47,9 @@ export class ImprovedStory {
     font?: string;
     titleColor?: string;
     textColor?: string;
+    titleFontSize?: number;
+    contentFontSize?: number;
+    backgroundColor?: string;
   }) {
     this.story = story;
     this.speed = speed;
@@ -54,16 +61,16 @@ export class ImprovedStory {
     this.font = font;
     this.titleColor = titleColor;
     this.textColor = textColor;
+    this.titleFontSize = titleFontSize;
+    this.contentFontSize = contentFontSize;
+    this.backgroundColor = backgroundColor;
 
     try {
       this.textOffscreenImage = new OffscreenCanvas(
         canvas.width,
         canvas.height * 3
       );
-    } catch (e) {
-      console.log(
-        "OffscreenCanvas not supported, falling back to direct rendering"
-      );
+    } catch {
       this.textOffscreenImage = null;
     }
 
@@ -74,16 +81,18 @@ export class ImprovedStory {
     const maxWidth = this.canvas.width - 80;
 
     // Process title
-    this.ctx.font = `bold 40px ${this.font}`;
+    this.ctx.font = `bold ${this.titleFontSize}px ${this.font}`;
     this.cachedTitleLines = this.wrapText(this.title.toUpperCase(), maxWidth);
 
     // Process main text
-    this.ctx.font = `22px ${this.font}`;
+    this.ctx.font = `${this.contentFontSize}px ${this.font}`;
     this.cachedLines = this.wrapText(this.story, maxWidth);
 
     // Calculate total height
     this.totalHeight =
-      this.cachedTitleLines.length * 60 + this.cachedLines.length * 36 + 100;
+      this.cachedTitleLines.length * (this.titleFontSize + 10) +
+      this.cachedLines.length * (this.contentFontSize + 8) +
+      100;
 
     // Pre-render text to offscreen canvas if supported
     if (this.textOffscreenImage) {
@@ -114,7 +123,7 @@ export class ImprovedStory {
 
     // Draw title
     offscreenCtx.fillStyle = this.titleColor;
-    offscreenCtx.font = `bold 40px ${this.font}`;
+    offscreenCtx.font = `bold ${this.titleFontSize}px ${this.font}`;
 
     this.cachedTitleLines.forEach((line) => {
       offscreenCtx.fillText(
@@ -122,7 +131,7 @@ export class ImprovedStory {
         Math.round(this.textOffscreenImage!.width / 2),
         yPos
       );
-      yPos += 60;
+      yPos += this.titleFontSize + 10;
     });
 
     // Add space between title and main text
@@ -130,7 +139,7 @@ export class ImprovedStory {
 
     // Draw main text
     offscreenCtx.fillStyle = this.textColor;
-    offscreenCtx.font = `22px ${this.font}`;
+    offscreenCtx.font = `${this.contentFontSize}px ${this.font}`;
 
     this.cachedLines.forEach((line) => {
       offscreenCtx.fillText(
@@ -138,7 +147,7 @@ export class ImprovedStory {
         Math.round(this.textOffscreenImage!.width / 2),
         yPos
       );
-      yPos += 36;
+      yPos += this.contentFontSize + 8;
     });
   }
 
@@ -209,51 +218,37 @@ export class ImprovedStory {
     const ctx = this.ctx;
     const canvas = this.canvas;
 
-    const roundedPosition = Math.round(interpolatedPosition);
-
-    ctx.fillStyle = "#000000";
+    // Clear canvas with background color
+    ctx.fillStyle = this.backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let yPos = Math.round(interpolatedPosition);
 
     // Draw title lines
     ctx.fillStyle = this.titleColor;
-    ctx.font = `bold 40px ${this.font}`;
+    ctx.font = `bold ${this.titleFontSize}px ${this.font}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 
-    // Apply text shadow for better visibility
-    ctx.shadowColor =
-      this.titleColor === "#FFDD00" ? "rgba(255, 221, 0, 0.4)" : "transparent";
-    ctx.shadowBlur = 3;
-
-    let yPos = roundedPosition;
-
     this.cachedTitleLines.forEach((line) => {
-      if (yPos >= -60 && yPos <= canvas.height) {
+      if (yPos >= -this.titleFontSize && yPos <= canvas.height) {
         ctx.fillText(line, Math.round(canvas.width / 2), yPos);
       }
-      yPos += 60;
+      yPos += this.titleFontSize + 10;
     });
 
-    // Add space between title and main text
     yPos += 40;
 
     // Draw main text
     ctx.fillStyle = this.textColor;
-    ctx.font = `22px ${this.font}`;
-
-    ctx.shadowColor =
-      this.textColor === "white" ? "rgba(255, 255, 255, 0.3)" : "transparent";
-    ctx.shadowBlur = 2;
+    ctx.font = `${this.contentFontSize}px ${this.font}`;
 
     this.cachedLines.forEach((line) => {
-      if (yPos >= -36 && yPos <= canvas.height) {
+      if (yPos >= -this.contentFontSize && yPos <= canvas.height) {
         ctx.fillText(line, Math.round(canvas.width / 2), yPos);
       }
-      yPos += 36;
+      yPos += this.contentFontSize + 8;
     });
-
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
   }
 
   update(timestamp: number) {
@@ -270,8 +265,7 @@ export class ImprovedStory {
     while (this.accumulatedTime >= this.animationStep) {
       const pixelsToMove = this.speed * 60 * this.animationStep;
       this.targetPosition -= pixelsToMove;
-      this.position =
-        this.position + (this.targetPosition - this.position) * 0.3;
+      this.position += (this.targetPosition - this.position) * 0.3;
       this.accumulatedTime -= this.animationStep;
     }
 

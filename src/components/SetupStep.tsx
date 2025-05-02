@@ -1,4 +1,3 @@
-// components/SetupStep.tsx
 import React from "react";
 
 interface SetupStepProps {
@@ -16,6 +15,12 @@ interface SetupStepProps {
   setTitleColor: (color: string) => void;
   textColor: string;
   setTextColor: (color: string) => void;
+  titleFontSize: number;
+  setTitleFontSize: (size: number) => void;
+  contentFontSize: number;
+  setContentFontSize: (size: number) => void;
+  backgroundColor: string;
+  setBackgroundColor: (color: string) => void;
   onContinue: () => void;
 }
 
@@ -34,6 +39,12 @@ const SetupStep: React.FC<SetupStepProps> = ({
   setTitleColor,
   textColor,
   setTextColor,
+  titleFontSize,
+  setTitleFontSize,
+  contentFontSize,
+  setContentFontSize,
+  backgroundColor,
+  setBackgroundColor,
   onContinue,
 }) => {
   return (
@@ -66,6 +77,9 @@ const SetupStep: React.FC<SetupStepProps> = ({
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your main text content here..."
             />
+            <p className="text-xs text-gray-400 mt-1">
+              This is the main scrolling text that appears in white
+            </p>
           </div>
         </div>
 
@@ -97,6 +111,9 @@ const SetupStep: React.FC<SetupStepProps> = ({
                 <span className="text-xs mt-1">High Quality</span>
               </button>
             </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Higher resolution = better quality but uses more resources
+            </p>
           </div>
 
           <div className="mb-6">
@@ -149,6 +166,54 @@ const SetupStep: React.FC<SetupStepProps> = ({
               type="color"
               value={textColor}
               onChange={(e) => setTextColor(e.target.value)}
+              className="w-full h-10 rounded cursor-pointer"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-2 font-medium">
+              Title Font Size: {titleFontSize}px
+            </label>
+            <input
+              type="range"
+              min="24"
+              max="60"
+              value={titleFontSize}
+              onChange={(e) => setTitleFontSize(parseInt(e.target.value))}
+              className="w-full accent-blue-500 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>Small</span>
+              <span>Medium</span>
+              <span>Large</span>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-2 font-medium">
+              Content Font Size: {contentFontSize}px
+            </label>
+            <input
+              type="range"
+              min="16"
+              max="32"
+              value={contentFontSize}
+              onChange={(e) => setContentFontSize(parseInt(e.target.value))}
+              className="w-full accent-blue-500 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>Small</span>
+              <span>Medium</span>
+              <span>Large</span>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-2 font-medium">Background Color</label>
+            <input
+              type="color"
+              value={backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
               className="w-full h-10 rounded cursor-pointer"
             />
           </div>

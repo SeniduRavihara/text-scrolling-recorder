@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useRef, useEffect } from "react";
 import { ImprovedStory } from "../classes/Story";
 
@@ -6,20 +7,27 @@ interface PreviewRecordStepProps {
   storyText: string;
   resolution: "720p" | "1080p";
   speed: number;
+  font: string;
+  titleColor: string;
+  textColor: string;
+  titleFontSize: number;
+  contentFontSize: number;
+  backgroundColor: string;
   onBackToSetup: () => void;
   audioFile: File | null;
 }
 
-/**
- * Second step of the Star Wars scroll creator
- * Handles preview, playback control, and video recording
- * Optimized for YouTube Shorts with 9:16 vertical aspect ratio
- */
 const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
   title,
   storyText,
   resolution,
   speed,
+  font,
+  titleColor,
+  textColor,
+  titleFontSize,
+  contentFontSize,
+  backgroundColor,
   onBackToSetup,
   audioFile,
 }) => {
@@ -36,7 +44,7 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
 
   // State
   const [loading, setLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false); // Start paused for better user experience
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -44,39 +52,34 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
   const [estimatedDuration, setEstimatedDuration] = useState("0:00");
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
-  // Fixed display dimensions - now vertical (9:16 aspect ratio)
-  const displayWidth = 270; // Narrower width for preview
-  const displayHeight = Math.round(displayWidth * (16 / 9)); // Calculate height based on 9:16 ratio
+  // Fixed display dimensions
+  const displayWidth = 360;
+  const displayHeight = Math.round(displayWidth * (16 / 9));
 
-  // Get resolution values based on setting - adjusted for 9:16 aspect ratio for Shorts
+  // Get resolution values based on setting
   const getResolutionValues = () => {
     return resolution === "720p"
-      ? { width: 720, height: 1280 } // 9:16 ratio for 720p
-      : { width: 1080, height: 1920 }; // 9:16 ratio for 1080p
+      ? { width: 720, height: 1280 }
+      : { width: 1080, height: 1920 };
   };
 
   // Animation function
   const animate = (timestamp: number) => {
     if (!storyRef.current || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
-    // Use black background (non-transparent) for better performance
-    ctx.fillStyle = "#000000";
+    // Use custom background color
+    ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Only update position if playing
     if (isPlaying) {
-      // Use the stable rendering method with timestamp
       storyRef.current.render(timestamp);
     } else {
-      // Just draw at current position without updating
       storyRef.current.drawOnly();
     }
 
-    // Continue animation loop
     animationRef.current = requestAnimationFrame(animate);
   };
 
@@ -87,19 +90,14 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      // Get context with performance optimizations
-      const ctx = canvas.getContext("2d", {
-        alpha: false, // Disable alpha for performance
-      });
+      const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
 
-      // Cancel existing animation if any
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
       }
 
-      // Apply resolution - now vertical for YouTube Shorts
       const { width, height } = getResolutionValues();
       canvas.width = width;
       canvas.height = height;
@@ -108,43 +106,42 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      // Set black background
-      ctx.fillStyle = "#000000";
+      // Set background color
+      ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, width, height);
 
-      // Create story instance with improved smoothing
-      // Note: May need to adjust text positioning in Story class for vertical orientation
+      // Create story instance
       const story = new ImprovedStory({
         story: storyText,
         speed: speed,
-        startPosition: height, // Start from bottom
+        startPosition: height,
         title: title,
         ctx: ctx,
         canvas: canvas,
+        font: font,
+        titleColor: titleColor,
+        textColor: textColor,
+        titleFontSize: titleFontSize,
+        contentFontSize: contentFontSize,
+        backgroundColor: backgroundColor,
       });
 
       storyRef.current = story;
 
-      // Calculate estimated scrolling duration
+      // Calculate estimated duration
       const durationSec = story.getEstimatedDuration();
       const mins = Math.floor(durationSec / 60);
       const secs = Math.floor(durationSec % 60);
       setEstimatedDuration(`${mins}:${secs.toString().padStart(2, "0")}`);
 
-      // Draw the initial frame without starting animation
-      ctx.fillStyle = "#000000";
+      // Draw initial frame
+      ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, width, height);
       story.drawOnly();
-
-      // Only start animation if isPlaying is true
-      if (isPlaying) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
 
       setLoading(false);
     };
 
-    // Use timeout to allow UI to update before heavy canvas operations
     setTimeout(initializeCanvas, 50);
 
     return () => {
@@ -170,26 +167,18 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
   // Handle play/pause functionality
   useEffect(() => {
     if (isPlaying) {
-      // Start animation if not already running
       if (!animationRef.current && storyRef.current) {
         animationRef.current = requestAnimationFrame(animate);
       }
-
-      // Start audio if available and not already playing
-      if (audioBufferRef.current && !isAudioPlaying) {
-        playAudio();
-      }
     } else {
-      // Stop animation if running
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
 
-        // Draw the current frame so it doesn't disappear
         if (storyRef.current && canvasRef.current) {
           const ctx = canvasRef.current.getContext("2d", { alpha: false });
           if (ctx) {
-            ctx.fillStyle = "#000000";
+            ctx.fillStyle = backgroundColor;
             ctx.fillRect(
               0,
               0,
@@ -200,9 +189,6 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
           }
         }
       }
-
-      // Stop audio if playing
-      stopAudio();
     }
   }, [isPlaying]);
 
@@ -210,8 +196,6 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
   useEffect(() => {
     if (storyRef.current) {
       storyRef.current.setSpeed(speed);
-
-      // Update estimated duration
       const durationSec = storyRef.current.getEstimatedDuration();
       const mins = Math.floor(durationSec / 60);
       const secs = Math.floor(durationSec % 60);
@@ -223,17 +207,12 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
   useEffect(() => {
     const loadAudio = async () => {
       if (!audioFile) return;
-
       try {
-        // Create new audio context
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
 
-        // Load audio file
         const arrayBuffer = await audioFile.arrayBuffer();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-        // Store the buffer for later use
         audioBufferRef.current = audioBuffer;
       } catch (err) {
         console.error("Failed to load audio file:", err);
@@ -242,9 +221,7 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
     };
 
     loadAudio();
-
     return () => {
-      // Clean up audio resources
       if (audioSourceRef.current) {
         audioSourceRef.current.disconnect();
         audioSourceRef.current = null;
@@ -261,9 +238,7 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
     const setupRecorder = async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-
       try {
-        // Clean up existing recorder
         if (
           mediaRecorderRef.current &&
           mediaRecorderRef.current.state !== "inactive"
@@ -271,20 +246,26 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
           mediaRecorderRef.current.stop();
         }
 
-        // Get video stream from canvas - using 60fps for smooth scrolling
         const videoStream = canvas.captureStream(60);
-
-        // Prepare audio stream if available
         let combinedStream: MediaStream;
 
         if (audioBufferRef.current && audioContextRef.current) {
-          // We'll create a new stream destination when recording starts
-          combinedStream = new MediaStream([...videoStream.getVideoTracks()]);
+          const source = audioContextRef.current.createBufferSource();
+          source.buffer = audioBufferRef.current;
+          source.loop = true;
+
+          const dest = audioContextRef.current.createMediaStreamDestination();
+          source.connect(dest);
+          source.connect(audioContextRef.current.destination);
+
+          combinedStream = new MediaStream([
+            ...videoStream.getVideoTracks(),
+            ...dest.stream.getAudioTracks(),
+          ]);
         } else {
           combinedStream = videoStream;
         }
 
-        // Try different formats with fallbacks - optimize for vertical video
         let options = {};
         if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
           options = {
@@ -303,16 +284,21 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
           };
         }
 
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state !== "inactive"
+        ) {
+          mediaRecorderRef.current.stop();
+        }
+
         const recorder = new MediaRecorder(combinedStream, options);
 
-        // Handle data chunks
         recorder.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
             chunksRef.current.push(event.data);
           }
         };
 
-        // Finalize blob when recording stops
         recorder.onstop = () => {
           if (chunksRef.current.length > 0) {
             const blob = new Blob(chunksRef.current, { type: "video/webm" });
@@ -336,153 +322,84 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
     setupRecorder();
   }, [resolution]);
 
-  // Helper function to play audio
-  const playAudio = () => {
-    if (!audioBufferRef.current || !audioContextRef.current) return;
-
-    try {
-      // Create new audio source
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBufferRef.current;
-      source.loop = true;
-
-      // Connect to audio output
-      source.connect(audioContextRef.current.destination);
-
-      // Start playback
-      source.start();
-
-      // Save reference for later cleanup
-      audioSourceRef.current = source;
-      setIsAudioPlaying(true);
-    } catch (err) {
-      console.error("Failed to play audio:", err);
-    }
-  };
-
-  // Helper function to stop audio
-  const stopAudio = () => {
-    if (!audioSourceRef.current) return;
-
-    try {
-      // Stop and disconnect audio source
-      audioSourceRef.current.stop();
-      audioSourceRef.current.disconnect();
-      audioSourceRef.current = null;
-      setIsAudioPlaying(false);
-    } catch (err) {
-      console.error("Failed to stop audio:", err);
-    }
-  };
-
   // Handlers
   const handleStartRecording = () => {
     if (!mediaRecorderRef.current || isRecording) return;
 
-    // Reset text position to start from beginning
     if (storyRef.current) {
       storyRef.current.reset();
-
-      // Ensure playback is active during recording
       if (!isPlaying) {
         setIsPlaying(true);
       }
     }
 
     try {
-      // Clear previous recording data
       chunksRef.current = [];
       setVideoBlob(null);
 
-      // Create a new audio source for recording if available
+      // Create new audio source for recording
       if (audioBufferRef.current && audioContextRef.current) {
-        // Stop existing audio if playing
         stopAudio();
 
-        // Create and configure new source
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBufferRef.current;
         source.loop = true;
 
-        // Create media stream destination for recording
         const dest = audioContextRef.current.createMediaStreamDestination();
         source.connect(dest);
-
-        // Also connect to audio output
         source.connect(audioContextRef.current.destination);
 
-        // Start audio
         source.start();
 
-        // Save reference
         audioSourceRef.current = source;
         setIsAudioPlaying(true);
 
-        // Get the audio stream and add it to the recorder's stream
         const audioStream = dest.stream;
         const videoStream = canvasRef.current!.captureStream(60);
 
-        // Create a new combined stream with both audio and video
         const combinedStream = new MediaStream([
           ...videoStream.getVideoTracks(),
           ...audioStream.getAudioTracks(),
         ]);
 
-        // Update the MediaRecorder with the new combined stream
-        if (mediaRecorderRef.current) {
-          mediaRecorderRef.current.stream
-            .getTracks()
-            .forEach((track) => track.stop());
-
-          let options = {};
-          if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")) {
-            options = {
-              mimeType: "video/webm;codecs=vp9,opus",
-              videoBitsPerSecond: resolution === "1080p" ? 8000000 : 4000000,
-            };
-          } else if (
-            MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
-          ) {
-            options = {
-              mimeType: "video/webm;codecs=vp8,opus",
-              videoBitsPerSecond: resolution === "1080p" ? 5000000 : 2500000,
-            };
-          } else if (MediaRecorder.isTypeSupported("video/webm")) {
-            options = {
-              mimeType: "video/webm",
-              videoBitsPerSecond: resolution === "1080p" ? 5000000 : 2500000,
-            };
-          }
-
-          mediaRecorderRef.current = new MediaRecorder(combinedStream, options);
-
-          // Reattach event handlers
-          mediaRecorderRef.current.ondataavailable = (event) => {
-            if (event.data && event.data.size > 0) {
-              chunksRef.current.push(event.data);
-            }
-          };
-
-          mediaRecorderRef.current.onstop = () => {
-            if (chunksRef.current.length > 0) {
-              const blob = new Blob(chunksRef.current, { type: "video/webm" });
-              setVideoBlob(blob);
-            }
-            setIsRecording(false);
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-            }
-          };
+        if (mediaRecorderRef.current.state !== "inactive") {
+          mediaRecorderRef.current.stop();
         }
+
+        let options = {};
+        if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")) {
+          options = { mimeType: "video/webm;codecs=vp9,opus" };
+        } else if (
+          MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+        ) {
+          options = { mimeType: "video/webm;codecs=vp8,opus" };
+        } else {
+          options = { mimeType: "video/webm" };
+        }
+
+        mediaRecorderRef.current = new MediaRecorder(combinedStream, options);
+
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            chunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+          if (chunksRef.current.length > 0) {
+            const blob = new Blob(chunksRef.current, { type: "video/webm" });
+            setVideoBlob(blob);
+          }
+          setIsRecording(false);
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+        };
       }
 
-      // Start recording with reasonable time slice
-      mediaRecorderRef.current.start(1000); // Collect data every second
-
+      mediaRecorderRef.current.start(1000);
       setIsRecording(true);
       setRecordingTime(0);
-
-      // Start timer for recording duration display
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
@@ -498,8 +415,12 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
         mediaRecorderRef.current.stop();
         setShowDownloadTip(true);
 
-        // Stop audio playback
-        stopAudio();
+        if (audioSourceRef.current) {
+          audioSourceRef.current.stop();
+          audioSourceRef.current.disconnect();
+          audioSourceRef.current = null;
+          setIsAudioPlaying(false);
+        }
       }
     } catch (err) {
       console.error("Failed to stop recording:", err);
@@ -507,25 +428,63 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
   };
 
   const handlePlayPause = () => {
+    if (!isPlaying) {
+      if (audioBufferRef.current && !isAudioPlaying) {
+        playAudio();
+      }
+    } else {
+      stopAudio();
+    }
     setIsPlaying(!isPlaying);
+  };
+
+  const playAudio = () => {
+    if (!audioBufferRef.current || !audioContextRef.current) return;
+    try {
+      if (audioContextRef.current.state === "suspended") {
+        audioContextRef.current.resume();
+      }
+
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBufferRef.current;
+      source.loop = true;
+
+      source.connect(audioContextRef.current.destination);
+      source.start();
+
+      audioSourceRef.current = source;
+      setIsAudioPlaying(true);
+    } catch (err) {
+      console.error("Failed to play audio:", err);
+    }
+  };
+
+  const stopAudio = () => {
+    if (!audioSourceRef.current) return;
+    try {
+      audioSourceRef.current.stop();
+      audioSourceRef.current.disconnect();
+      audioSourceRef.current = null;
+      setIsAudioPlaying(false);
+    } catch (err) {
+      console.error("Failed to stop audio:", err);
+    }
   };
 
   const handleReset = () => {
     if (storyRef.current) {
       storyRef.current.reset();
 
-      // Draw the initial frame after reset
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext("2d", { alpha: false });
         if (ctx) {
-          ctx.fillStyle = "#000000";
+          ctx.fillStyle = backgroundColor;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           storyRef.current.drawOnly();
         }
       }
 
-      // If currently playing, restart audio
       if (isPlaying) {
         stopAudio();
         playAudio();
@@ -533,22 +492,13 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
     }
   };
 
-  const handleAudioToggle = () => {
-    if (isAudioPlaying) {
-      stopAudio();
-    } else {
-      playAudio();
-    }
-  };
-
   const handleDownload = () => {
     if (!videoBlob) return;
-
     try {
       const url = URL.createObjectURL(videoBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `star_wars_scroll_vertical_${resolution}.webm`;
+      link.download = `star_wars_scroll_${resolution}.webm`;
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -562,14 +512,16 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Format the background color for display
+//   const displayBackgroundColor = backgroundColor.startsWith("#")
+//     ? backgroundColor
+//     : `#${backgroundColor}`;
+
   return (
     <div className="flex flex-col md:flex-row gap-6 max-w-6xl mx-auto w-full">
-      {/* Canvas container - adjusted for vertical video */}
+      {/* Canvas container */}
       <div className="flex-1 flex flex-col items-center justify-center bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-medium mb-4">
-          Preview (Vertical 9:16 Format)
-        </h3>
-
+        <h3 className="text-xl font-medium mb-4">Preview</h3>
         <div
           className="relative mb-6"
           style={{
@@ -582,7 +534,6 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
               <div className="text-white">Loading...</div>
             </div>
           )}
-
           <canvas
             ref={canvasRef}
             className="border border-gray-700 rounded shadow-lg"
@@ -592,7 +543,6 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
               objectFit: "contain",
             }}
           />
-
           {isRecording && (
             <div className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm flex items-center">
               <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
@@ -613,14 +563,12 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
           >
             {isPlaying ? "Pause" : "Play"}
           </button>
-
           <button
             onClick={handleReset}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded transition font-medium"
           >
             Reset
           </button>
-
           <button
             onClick={onBackToSetup}
             className="px-6 py-2 bg-gray-600 hover:bg-gray-700 rounded transition font-medium"
@@ -629,7 +577,7 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
           </button>
         </div>
 
-        {/* Audio indicator (only show if audio file is available) */}
+        {/* Audio indicator */}
         {audioFile && (
           <div className="flex items-center mt-2">
             <div
@@ -648,16 +596,12 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
           <p className="text-sm text-gray-300">
             Estimated Duration: {estimatedDuration}
           </p>
-          <p className="text-sm text-gray-300 mt-1">
-            Optimized for YouTube Shorts and vertical video platforms
-          </p>
         </div>
       </div>
 
       {/* Recording controls */}
       <div className="w-full md:w-72 bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col">
         <h3 className="text-xl font-medium mb-4">Recording</h3>
-
         {!videoBlob ? (
           <div className="flex-1 flex flex-col">
             <div className="bg-gray-700 rounded-lg p-4 mb-6">
@@ -667,10 +611,8 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
                 <li>Close other browser tabs</li>
                 <li>Recording will start from the beginning</li>
                 <li>The recording will continue until you stop it</li>
-                <li>Format is 9:16 (vertical) for YouTube Shorts</li>
               </ul>
             </div>
-
             <div className="grid grid-cols-1 gap-3 mb-4">
               <button
                 onClick={handleStartRecording}
@@ -683,7 +625,6 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
               >
                 {isRecording ? "Recording..." : "Start Recording"}
               </button>
-
               <button
                 onClick={handleStopRecording}
                 disabled={!isRecording}
@@ -696,17 +637,15 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
                 Stop Recording
               </button>
             </div>
-
             {isRecording && (
               <div className="bg-red-900 bg-opacity-30 p-3 rounded-lg text-center">
                 <div className="font-bold">Recording in Progress</div>
                 <div className="text-xl mt-1">{formatTime(recordingTime)}</div>
               </div>
             )}
-
             <div className="mt-auto pt-4">
               <div className="text-xs text-gray-400">
-                Using {resolution} vertical format • {speed.toFixed(1)}x speed
+                Using {resolution} resolution • {speed.toFixed(1)}x speed
               </div>
             </div>
           </div>
@@ -717,10 +656,9 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
               <video
                 className="w-full rounded border border-gray-700"
                 controls
-                src={URL.createObjectURL(videoBlob)}
+                src={URL.createObjectURL(videoBlob!)}
               />
             </div>
-
             {showDownloadTip && (
               <div className="mt-2 p-3 bg-blue-900 bg-opacity-50 rounded-lg text-sm mb-4">
                 <p>
@@ -730,14 +668,12 @@ const PreviewRecordStep: React.FC<PreviewRecordStepProps> = ({
                 </p>
               </div>
             )}
-
             <button
               onClick={handleDownload}
               className="py-3 bg-green-600 hover:bg-green-700 rounded-lg transition font-medium"
             >
               Download Video
             </button>
-
             <button
               onClick={() => {
                 setVideoBlob(null);

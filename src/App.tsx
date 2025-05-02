@@ -1,4 +1,3 @@
-// App.tsx
 import React, { useState } from "react";
 import SetupStep from "./components/SetupStep";
 import AudioSetupStep from "./components/AudioSetupStep";
@@ -8,12 +7,15 @@ import { longText } from "./constants";
 const App = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [title, setTitle] = useState("EPISODE IV\nA NEW HOPE");
-  const [storyText, setStoryText] = useState(longText); // Replace with actual text
+  const [storyText, setStoryText] = useState(longText);
   const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
   const [speed, setSpeed] = useState(1);
   const [font, setFont] = useState("'StarJedi', sans-serif");
   const [titleColor, setTitleColor] = useState("#FFDD00");
   const [textColor, setTextColor] = useState("white");
+  const [titleFontSize, setTitleFontSize] = useState(40);
+  const [contentFontSize, setContentFontSize] = useState(22);
+  const [backgroundColor, setBackgroundColor] = useState("#000000");
   const [audioFile, setAudioFile] = useState<File | null>(null);
 
   // Step indicators
@@ -50,7 +52,7 @@ const App = () => {
   );
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900 min-h-screen text-white w-screen">
+    <div className="flex flex-col gap-4 p-4 bg-gray-900 min-h-screen text-white w-screen overflow-x-hidden">
       {renderStepIndicator()}
 
       {currentStep === 1 ? (
@@ -69,6 +71,12 @@ const App = () => {
           setTitleColor={setTitleColor}
           textColor={textColor}
           setTextColor={setTextColor}
+          titleFontSize={titleFontSize}
+          setTitleFontSize={setTitleFontSize}
+          contentFontSize={contentFontSize}
+          setContentFontSize={setContentFontSize}
+          backgroundColor={backgroundColor}
+          setBackgroundColor={setBackgroundColor}
           onContinue={() => setCurrentStep(2)}
         />
       ) : currentStep === 2 ? (
@@ -87,6 +95,9 @@ const App = () => {
           font={font}
           titleColor={titleColor}
           textColor={textColor}
+          titleFontSize={titleFontSize}
+          contentFontSize={contentFontSize}
+          backgroundColor={backgroundColor}
           audioFile={audioFile}
           onBackToSetup={() => setCurrentStep(2)}
         />
