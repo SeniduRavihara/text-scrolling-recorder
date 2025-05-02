@@ -147,8 +147,8 @@ const SetupStep: React.FC<SetupStepProps> = ({
               <option value="'Arial', sans-serif">Arial</option>
               <option value="'Courier New', monospace">Courier New</option>
               <option value="'Times New Roman', serif">Times New Roman</option>
-              <option value="'CustomFont1', sans-serif">Custom Font 1</option>
-              <option value="'CustomFont2', sans-serif">Custom Font 2</option>
+              <option value="'UN-Arjuna', sans-serif">UN-Arjuna</option>
+              <option value="'UN-Baron', sans-serif">UN-Baron</option>
             </select>
           </div>
 
@@ -198,7 +198,7 @@ const SetupStep: React.FC<SetupStepProps> = ({
             <input
               type="range"
               min="16"
-              max="32"
+              max="72"
               value={contentFontSize}
               onChange={(e) => setContentFontSize(parseInt(e.target.value))}
               className="w-full accent-blue-500 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
